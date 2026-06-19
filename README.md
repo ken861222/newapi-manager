@@ -128,3 +128,7 @@ docker compose up -d
 ## License
 
 MIT
+
+---
+
+社区交流: [Linux.do](https://linux.do)
