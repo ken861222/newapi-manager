@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewAPI 管理平台</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{dark:{900:'#0b1120',800:'#131c31',700:'#1a2742',600:'#243352'}}}}}</script>
+  <style>
+    body{background:#0b1120}
+    .glass{background:rgba(19,28,49,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06)}
+    .glow-blue{box-shadow:0 0 20px rgba(59,130,246,.15)}.glow-green{box-shadow:0 0 20px rgba(34,197,94,.15)}
+    .fade-in{animation:fadeIn .3s ease-out}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#243352;border-radius:3px}
+    .modal-bg{background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+  </style>
+</head>
+<body class="min-h-screen text-gray-200 font-sans">
+
+  <header class="glass sticky top-0 z-40 border-b border-white/5">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-xs">N</div>
+        <div><h1 class="text-base font-bold text-white">NewAPI 管理平台</h1><p class="text-xs text-gray-500" id="lastUpdate">等待刷新...</p></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openAddModal()" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition">+ 添加站点</button>
+        <button onclick="checkinAll()" id="btnCheckinAll" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition">全部签到</button>
+        <button onclick="loadDashboard()" class="px-3 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs font-medium transition">刷新</button>
+        <div class="relative">
+          <button onclick="toggleSettingsMenu()" class="px-2 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </button>
+          <div id="settingsMenu" class="hidden absolute right-0 mt-1 w-40 glass rounded-lg shadow-lg py-1 z-50">
+            <button onclick="openLogsModal()" class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5">📋 请求日志</button>
+            <button onclick="openChangePwModal()" class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5">🔑 修改密码</button>
+            <hr class="border-white/5 my-1">
+            <button onclick="doLogout()" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5">退出登录</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="glass rounded-xl p-3 glow-blue"><div class="text-xs text-gray-400">站点</div><div class="text-xl font-bold text-white" id="sumTotal">-</div><span class="text-xs"><span id="sumOnline" class="text-emerald-400">-</span> 在线 / <span id="sumOffline" class="text-red-400">-</span> 离线</span></div>
+      <div class="glass rounded-xl p-3 glow-green"><div class="text-xs text-gray-400">总余额</div><div class="text-xl font-bold text-emerald-400">$<span id="sumBalance">-</span></div></div>
+      <div class="glass rounded-xl p-3"><div class="text-xs text-gray-400">历史总消耗</div><div class="text-xl font-bold text-amber-400">$<span id="sumUsed">-</span></div></div>
+      <div class="glass rounded-xl p-3"><div class="text-xs text-gray-400">总请求</div><div class="text-xl font-bold text-blue-400" id="sumRequests">-</div></div>
+    </div>
+    <div class="glass rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead><tr class="text-xs text-gray-500 uppercase border-b border-white/5">
+          <th class="px-4 py-2.5 text-left">站点</th><th class="px-4 py-2.5 text-right">余额</th>
+          <th class="px-4 py-2.5 text-center">签到</th><th class="px-4 py-2.5 text-right">操作</th>
+        </tr></thead>
+        <tbody id="siteTable"><tr><td colspan="4" class="text-center text-gray-500 py-8">加载中...</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="fixed inset-0 z-50 modal-bg hidden flex items-center justify-center p-4">
+    <div class="glass rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col fade-in">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-white/5">
+        <h3 class="text-base font-bold text-white" id="detailTitle">站点详情</h3>
+        <button onclick="closeDetail()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-5" id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="siteModal" class="fixed inset-0 z-50 modal-bg hidden flex items-center justify-center p-4">
+    <div class="glass rounded-2xl w-full max-w-md fade-in">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-white/5">
+        <h3 class="text-base font-bold text-white" id="modalTitle">添加站点</h3>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="siteForm" onsubmit="submitSite(event)" novalidate class="p-5 space-y-3">
+        <input type="hidden" id="editId">
+        <div><label class="text-xs text-gray-400 mb-1 block">站点 URL</label><input id="fUrl" type="text" placeholder="https://example.com" class="w-full bg-dark-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" required></div>
+        <div><label class="text-xs text-gray-400 mb-1 block">User ID <span class="text-gray-600">（个人设置页面可查看）</span></label><input id="fUserId" type="text" placeholder="例: 33182" class="w-full bg-dark-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+        <div><label class="text-xs text-gray-400 mb-1 block">访问令牌 <span class="text-gray-600">（个人设置 → 安全设置 → 系统访问令牌）</span></label><input id="fToken" type="text" placeholder="粘贴令牌" class="w-full bg-dark-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+        <div id="testResult" class="hidden"></div>
+        <button type="button" id="btnTest" onclick="testConnection()" class="w-full py-2 rounded-lg bg-dark-600 hover:bg-dark-700 text-gray-300 text-sm transition">测试连接</button>
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 text-sm text-gray-300"><input id="fAutoCheckin" type="checkbox" checked class="rounded bg-dark-800 border-white/20">自动签到</label>
+          <div class="flex items-center gap-1 text-sm text-gray-300">每日<select id="fCheckinHour" class="bg-dark-800 border border-white/10 rounded px-2 py-1 text-sm text-white"><option value="0">0:00</option><option value="1">1:00</option><option value="2">2:00</option><option value="3">3:00</option><option value="4">4:00</option><option value="5">5:00</option><option value="6">6:00</option><option value="7">7:00</option><option value="8" selected>8:00</option><option value="9">9:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select> 签到</div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeModal()" class="flex-1 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm">取消</button>
+          <button type="submit" class="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="pwModal" class="fixed inset-0 z-50 modal-bg hidden flex items-center justify-center p-4">
+    <div class="glass rounded-2xl w-full max-w-sm fade-in">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-white/5">
+        <h3 class="text-base font-bold text-white">修改密码</h3>
+        <button onclick="closePwModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+      </div>
+      <form onsubmit="changePassword(event)" class="p-5 space-y-3">
+        <div><label class="text-xs text-gray-400 mb-1 block">原密码</label><input id="oldPw" type="password" class="w-full bg-dark-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" required></div>
+        <div><label class="text-xs text-gray-400 mb-1 block">新密码</label><input id="newPw" type="password" class="w-full bg-dark-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" required></div>
+        <div id="pwError" class="hidden text-xs text-red-400 text-center"></div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closePwModal()" class="flex-1 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm">取消</button>
+          <button type="submit" class="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Logs Modal -->
+  <div id="logsModal" class="fixed inset-0 z-50 modal-bg hidden flex items-center justify-center p-4">
+    <div class="glass rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col fade-in">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-white/5">
+        <h3 class="text-base font-bold text-white">请求日志</h3>
+        <div class="flex items-center gap-2">
+          <select id="logSiteFilter" onchange="loadLogs()" class="bg-dark-800 border border-white/10 rounded px-2 py-1 text-xs text-white"><option value="">全部站点</option></select>
+          <button onclick="closeLogsModal()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4" id="logsBody">
+        <div class="text-center text-gray-500 py-8 text-sm">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed top-4 right-4 z-[100] space-y-2"></div>
+
+<script>
+var sites=[];
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function toast(msg,type){var t=document.createElement('div');t.className='px-4 py-2 rounded-lg text-sm fade-in '+(type==='error'?'bg-red-600 text-white':type==='warning'?'bg-amber-600 text-white':type==='success'?'bg-emerald-600 text-white':'bg-dark-600 text-gray-200');t.textContent=msg;document.getElementById('toast').appendChild(t);setTimeout(function(){t.remove();},3500);}
+function fmt(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toString();}
+async function api(path,opts){opts=opts||{};var o={method:opts.method||'GET',headers:{'Content-Type':'application/json'}};if(opts.body)o.body=JSON.stringify(opts.body);var res=await fetch('/api'+path,o);if(res.status===401){window.location.href='/login';throw new Error('未登录');}var data=await res.json();if(!res.ok)throw new Error(data.error||'请求失败');return data;}
+
+// ── Settings Menu ────────────────────────────────────────────────────
+function toggleSettingsMenu(){document.getElementById('settingsMenu').classList.toggle('hidden');}
+document.addEventListener('click',function(e){var m=document.getElementById('settingsMenu');if(m&&!m.contains(e.target)&&!e.target.closest('button'))m.classList.add('hidden');});
+
+async function doLogout(){try{await api('/logout',{method:'POST'});}catch(e){}window.location.href='/login';}
+
+function openChangePwModal(){document.getElementById('oldPw').value='';document.getElementById('newPw').value='';document.getElementById('pwError').classList.add('hidden');document.getElementById('pwModal').classList.remove('hidden');document.getElementById('settingsMenu').classList.add('hidden');}
+function closePwModal(){document.getElementById('pwModal').classList.add('hidden');}
+async function changePassword(e){
+  e.preventDefault();
+  var err=document.getElementById('pwError');
+  try{
+    var d=await api('/change-password',{method:'POST',body:{old_password:document.getElementById('oldPw').value,new_password:document.getElementById('newPw').value}});
+    if(d.success){toast('密码已修改','success');closePwModal();}
+    else{err.textContent=d.error;err.classList.remove('hidden');}
+  }catch(ex){err.textContent=ex.message;err.classList.remove('hidden');}
+}
+
+// ── Logs ─────────────────────────────────────────────────────────────
+function openLogsModal(){
+  document.getElementById('settingsMenu').classList.add('hidden');
+  var sel=document.getElementById('logSiteFilter');
+  sel.innerHTML='<option value="">全部站点</option>';
+  sites.forEach(function(s){sel.innerHTML+='<option value="'+s.id+'">'+esc(s.name)+'</option>';});
+  document.getElementById('logsModal').classList.remove('hidden');
+  loadLogs();
+}
+function closeLogsModal(){document.getElementById('logsModal').classList.add('hidden');}
+async function loadLogs(){
+  var sid=document.getElementById('logSiteFilter').value;
+  var el=document.getElementById('logsBody');
+  el.innerHTML='<div class="text-center text-gray-500 py-4 text-xs">加载中...</div>';
+  try{
+    var logs=await api('/logs'+(sid?'?site_id='+sid:''));
+    if(!logs.length){el.innerHTML='<div class="text-center text-gray-500 py-8 text-sm">暂无日志</div>';return;}
+    el.innerHTML=logs.map(function(l){
+      var time=l.created_at?new Date(l.created_at).toLocaleString():'';
+      var statusCls=l.status_code>=200&&l.status_code<300?'text-emerald-400':l.status_code>=400?'text-red-400':'text-amber-400';
+      var methodCls=l.method==='GET'?'text-blue-400':'text-orange-400';
+      return '<div class="border-b border-white/5 py-2 text-xs">'
+        +'<div class="flex items-center gap-2 mb-1">'
+          +'<span class="'+methodCls+' font-mono font-bold">'+l.method+'</span>'
+          +'<span class="text-gray-400 font-mono truncate flex-1">'+esc(l.url)+'</span>'
+          +'<span class="'+statusCls+' font-mono">'+(l.status_code||'ERR')+'</span>'
+          +'<span class="text-gray-600">'+time+'</span>'
+        +'</div>'
+        +(l.error?'<div class="text-red-400/80 mt-1">❌ '+esc(l.error)+'</div>':'')
+        +(l.response_body?'<details class="mt-1"><summary class="text-gray-500 cursor-pointer hover:text-gray-300">响应内容</summary><pre class="text-gray-400 bg-dark-800 rounded p-2 mt-1 overflow-x-auto whitespace-pre-wrap break-all">'+esc(l.response_body)+'</pre></details>':'')
+      +'</div>';
+    }).join('');
+  }catch(e){el.innerHTML='<div class="text-center text-red-400 py-4 text-sm">加载失败: '+esc(e.message)+'</div>';}
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────
+async function loadDashboard(){
+  try{
+    var data=await api('/dashboard');
+    sites=data.sites||[];
+    var s=data.summary||{};
+    document.getElementById('sumTotal').textContent=s.total||0;
+    document.getElementById('sumOnline').textContent=s.online||0;
+    document.getElementById('sumOffline').textContent=s.offline||0;
+    document.getElementById('sumBalance').textContent=(s.total_balance||0).toFixed(2);
+    document.getElementById('sumUsed').textContent=(s.total_used||0).toFixed(2);
+    document.getElementById('sumRequests').textContent=fmt(s.total_requests||0);
+    renderTable();
+    document.getElementById('lastUpdate').textContent='更新于 '+new Date().toLocaleTimeString();
+  }catch(e){if(e.message!=='未登录')toast('加载失败: '+e.message,'error');}
+}
+
+function renderTable(){
+  var tbody=document.getElementById('siteTable');
+  if(!sites.length){tbody.innerHTML='<tr><td colspan="4" class="text-center text-gray-500 py-8">暂无站点，点击右上角添加</td></tr>';return;}
+  tbody.innerHTML=sites.map(function(s){
+    var bal=s.online?'$'+s.balance_usd.toFixed(2):'<span class="text-gray-600">-</span>';
+    var checkin=s.online?(s.checked_today?'<span class="text-emerald-400 text-xs">✓ 已签</span>':'<span class="text-gray-500 text-xs">未签</span>'):'<span class="text-gray-600 text-xs">-</span>';
+    var dot=s.online?'<span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>':'<span class="w-2 h-2 rounded-full bg-red-400 inline-block"></span>';
+    return '<tr class="border-b border-white/5 hover:bg-white/[.03] cursor-pointer" onclick="openDetail('+s.id+')">'
+      +'<td class="px-4 py-2.5"><div class="flex items-center gap-2"><div>'+dot+'</div><div><div class="text-white text-sm font-medium">'+esc(s.name)+'</div><div class="text-xs text-gray-500">'+esc(s.display_name||'')+'</div></div></div></td>'
+      +'<td class="px-4 py-2.5 text-right text-sm font-mono text-emerald-400">'+bal+'</td>'
+      +'<td class="px-4 py-2.5 text-center">'+checkin+'</td>'
+      +'<td class="px-4 py-2.5 text-right" onclick="event.stopPropagation()">'
+        +'<button onclick="checkinSite('+s.id+')" class="text-xs text-emerald-400 hover:text-emerald-300 mr-2">签到</button>'
+        +'<button onclick="editSite('+s.id+')" class="text-xs text-blue-400 hover:text-blue-300 mr-2">编辑</button>'
+        +'<button onclick="deleteSite('+s.id+')" class="text-xs text-red-400 hover:text-red-300">删除</button>'
+      +'</td></tr>';
+  }).join('');
+}
+
+// ── Detail Modal ─────────────────────────────────────────────────────
+function openDetail(id){
+  var s=sites.find(function(x){return x.id===id});if(!s)return;
+  document.getElementById('detailTitle').textContent=s.name;
+  var status=s.online?'<span class="text-emerald-400">在线</span>':'<span class="text-red-400">离线</span>';
+  var err=s.error?'<div class="text-xs text-red-400 mt-3 p-2 bg-red-500/10 rounded">'+esc(s.error)+'</div>':'';
+  var pct=s.online&&s.used_quota?Math.min(100,Math.round(s.used_quota/(s.quota+s.used_quota)*100)):0;
+  var html='<div class="space-y-4 text-sm">'
+    +'<div class="flex justify-between"><span class="text-gray-400">状态</span>'+status+'</div>'
+    +'<div class="flex justify-between"><span class="text-gray-400">URL</span><a href="'+esc(s.url)+'" target="_blank" class="text-blue-400 hover:underline text-xs">'+esc(s.url)+'</a></div>'
+    +'<div class="flex justify-between"><span class="text-gray-400">用户</span><span>'+esc(s.display_name||'-')+' <span class="text-gray-500 text-xs">('+esc(s.role==1?'管理员':'用户')+')</span></span></div>'
+    +'<div class="bg-dark-800 rounded-lg p-3 space-y-2">'
+    +'<div class="text-xs text-gray-500 uppercase tracking-wider mb-1">余额信息</div>'
+    +'<div class="flex justify-between"><span class="text-gray-400">当前余额</span><span class="text-emerald-400 font-mono text-base">$'+s.balance_usd.toFixed(4)+'</span></div>'
+    +'<div class="flex justify-between"><span class="text-gray-400">用量占比</span><span class="text-xs">'+pct+'%</span></div>'
+    +'<div class="w-full h-2 bg-dark-600 rounded-full overflow-hidden"><div class="h-full rounded-full '+(pct>80?'bg-red-500':pct>50?'bg-amber-500':'bg-emerald-500')+'" style="width:'+pct+'%"></div></div>'
+    +'</div>'
+    +'<div class="bg-dark-800 rounded-lg p-3 space-y-2">'
+    +'<div class="text-xs text-gray-500 uppercase tracking-wider mb-1">历史累计</div>'
+    +'<div class="flex justify-between"><span class="text-gray-400">总消耗</span><span class="text-amber-400 font-mono">$'+s.used_usd.toFixed(4)+'</span></div>'
+    +'<div class="flex justify-between"><span class="text-gray-400">总请求</span><span class="text-blue-400 font-mono">'+s.request_count.toLocaleString()+'</span></div>'
+    +'</div>'
+    +'<div class="bg-dark-800 rounded-lg p-3 space-y-2">'
+    +'<div class="text-xs text-gray-500 uppercase tracking-wider mb-1">签到信息</div>'
+    +'<div class="flex justify-between"><span class="text-gray-400">今日签到</span>'+(s.checked_today?'<span class="text-emerald-400">✓ 已签到</span>':'<span class="text-gray-500">未签到</span>')+'</div>'
+    +(s.last_checkin_msg?'<div class="flex justify-between"><span class="text-gray-400">签到消息</span><span class="text-xs text-gray-300">'+esc(s.last_checkin_msg)+'</span></div>':'')
+    +'<div class="flex justify-between"><span class="text-gray-400">自动签到</span>'+(s.auto_checkin?'<span class="text-emerald-400">开启 · 每日 '+s.checkin_hour+':00</span>':'<span class="text-gray-500">关闭</span>')+'</div>'
+    +'</div>'
+    +err+'</div>';
+  document.getElementById('detailBody').innerHTML=html;
+  document.getElementById('detailModal').classList.remove('hidden');
+}
+function closeDetail(){document.getElementById('detailModal').classList.add('hidden');}
+
+// ── Actions ──────────────────────────────────────────────────────────
+async function testConnection(){
+  var url=document.getElementById('fUrl').value.trim(),token=document.getElementById('fToken').value.trim(),
+      uid=document.getElementById('fUserId').value.trim(),btn=document.getElementById('btnTest'),res=document.getElementById('testResult');
+  if(!url||!token||!uid){toast('请先填写 URL、User ID 和令牌','warning');return;}
+  btn.disabled=true;btn.textContent='测试中...';res.classList.remove('hidden');res.innerHTML='<div class="text-xs text-gray-400">正在连接...</div>';
+  try{
+    var data=await api('/test-connection',{method:'POST',body:{url:url,token:token,user_id:uid}});
+    if(data.success)res.innerHTML='<div class="text-xs text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">✅ '+esc(data.display_name)+' · 余额 $'+data.balance_usd+'</div>';
+    else res.innerHTML='<div class="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">❌ '+esc(data.error)+'</div>';
+  }catch(e){res.innerHTML='<div class="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">❌ '+esc(e.message)+'</div>';}
+  finally{btn.disabled=false;btn.textContent='测试连接';}
+}
+async function checkinSite(id){try{var r=await api('/sites/'+id+'/checkin',{method:'POST'});toast(r.name+': '+r.message,r.success?'success':'warning');loadDashboard();}catch(e){toast('签到失败: '+e.message,'error');}}
+async function checkinAll(){var btn=document.getElementById('btnCheckinAll');btn.disabled=true;btn.textContent='签到中...';try{var d=await api('/checkin-all',{method:'POST'});var ok=d.results.filter(function(r){return r.success}).length;toast('签到完成: '+ok+'/'+d.results.length+' 成功','success');loadDashboard();}catch(e){toast('批量签到失败: '+e.message,'error');}finally{btn.disabled=false;btn.textContent='全部签到';}}
+
+function openAddModal(){document.getElementById('modalTitle').textContent='添加站点';document.getElementById('editId').value='';document.getElementById('siteForm').reset();document.getElementById('fAutoCheckin').checked=true;document.getElementById('testResult').classList.add('hidden');document.getElementById('siteModal').classList.remove('hidden');}
+function editSite(id){
+  var s=sites.find(function(x){return x.id===id});if(!s)return;
+  document.getElementById('modalTitle').textContent='编辑站点';document.getElementById('editId').value=id;
+  document.getElementById('fUrl').value=s.url;document.getElementById('fUserId').value=s.user_id||'';
+  document.getElementById('fToken').value='';document.getElementById('fToken').placeholder='留空则不修改';
+  document.getElementById('fAutoCheckin').checked=s.auto_checkin;document.getElementById('fCheckinHour').value=s.checkin_hour;
+  document.getElementById('testResult').classList.add('hidden');document.getElementById('siteModal').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('siteModal').classList.add('hidden');}
+
+async function submitSite(e){
+  e.preventDefault();var id=document.getElementById('editId').value;
+  var body={url:document.getElementById('fUrl').value,user_id:parseInt(document.getElementById('fUserId').value)||0,auto_checkin:document.getElementById('fAutoCheckin').checked,checkin_hour:parseInt(document.getElementById('fCheckinHour').value)};
+  var token=document.getElementById('fToken').value.trim();if(token)body.token=token;
+  try{
+    if(id){await api('/sites/'+id,{method:'PUT',body:body});toast('已更新','success');}
+    else{if(!token){toast('请输入令牌','error');return;}await api('/sites',{method:'POST',body:body});toast('已添加','success');}
+    closeModal();loadDashboard();
+  }catch(e){toast('保存失败: '+e.message,'error');}
+}
+async function deleteSite(id){
+  var s=sites.find(function(x){return x.id===id});
+  if(!confirm('确定删除 "'+(s?s.name:id)+'"？'))return;
+  try{await api('/sites/'+id,{method:'DELETE'});toast('已删除','success');loadDashboard();}catch(e){toast('删除失败: '+e.message,'error');}
+}
+
+loadDashboard();setInterval(loadDashboard,300000);
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 — NewAPI 管理平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{dark:{900:'#0b1120',800:'#131c31',700:'#1a2742'}}}}}</script>
+  <style>body{background:#0b1120}.glass{background:rgba(19,28,49,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06)}</style>
+</head>
+<body class="min-h-screen flex items-center justify-center text-gray-200 font-sans">
+  <div class="glass rounded-2xl w-full max-w-sm p-8 space-y-6">
+    <div class="text-center">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">N</div>
+      <h1 class="text-lg font-bold text-white">NewAPI 管理平台</h1>
+      <p class="text-xs text-gray-500 mt-1">请登录以继续</p>
+    </div>
+    <form id="loginForm" onsubmit="doLogin(event)" class="space-y-4">
+      <div><label class="text-xs text-gray-400 mb-1 block">用户名</label><input id="loginUser" type="text" class="w-full bg-dark-800 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="用户名" required></div>
+      <div><label class="text-xs text-gray-400 mb-1 block">密码</label><input id="loginPass" type="password" class="w-full bg-dark-800 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="密码" required></div>
+      <div id="loginError" class="hidden text-xs text-red-400 text-center"></div>
+      <button type="submit" class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition">登录</button>
+    </form>
+  </div>
+<script>
+async function doLogin(e){
+  e.preventDefault();
+  var u=document.getElementById('loginUser').value,p=document.getElementById('loginPass').value;
+  var err=document.getElementById('loginError');
+  try{
+    var r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    var d=await r.json();
+    if(d.success){window.location.href='/';}
+    else{err.textContent=d.error||'登录失败';err.classList.remove('hidden');}
+  }catch(ex){err.textContent='网络错误';err.classList.remove('hidden');}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+services:
+  newapi-manager:
+    build: .
+    container_name: newapi-manager
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/instance

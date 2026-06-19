@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.secret_key
+instance/
+data/
+*.db
+.DS_Store
+run.sh
