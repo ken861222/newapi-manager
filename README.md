@@ -2,6 +2,16 @@
 
 管理多个 NewAPI 中转站的 Web 工具。支持实时查看余额、历史消耗、自动签到，以及请求日志追踪。
 
+## 界面预览
+
+| 登录页面 | 主面板 |
+|---------|--------|
+| ![登录页面](screenshots/login.png) | ![主面板](screenshots/dashboard.png) |
+
+| 添加站点 | 设置菜单 | 请求日志 |
+|---------|---------|---------|
+| ![添加站点](screenshots/add_site.png) | ![设置菜单](screenshots/settings.png) | ![请求日志](screenshots/logs.png) |
+
 ## 功能
 
 - **站点管理**: 添加、编辑、删除 NewAPI 站点，通过令牌(Token)认证连接
